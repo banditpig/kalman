@@ -2,11 +2,19 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE FlexibleInstances   #-}
 
-
 import Data.Proxy
 import GHC.TypeNats
 import Data.Typeable
 import Data.List as L
+
+class DivSupported a where
+  divOp :: a -> a -> a
+  
+instance DivSupported Int     where divOp = div
+instance DivSupported Integer where divOp = div
+instance DivSupported Double  where divOp = (/)
+instance DivSupported Float   where divOp = (/)   
+
 
 newtype Matrix (r :: Nat) (c :: Nat) a = Matrix [[a]] deriving Show
 
@@ -31,7 +39,7 @@ mul (Matrix xs) (Matrix ys ) = Matrix $ with xs $ \rowi ->
                                           sum $ zipWith (*) rowi coli
                                         where ys'= L.transpose ys
 
-with ::  [a] -> (a -> b) -> [b]
+with ::  [a] -> (a -> b) -> [b] 
 with = flip fmap
      
 mul' :: Num a => Matrix n m a -> Matrix m p a  -> Matrix n p a
@@ -45,11 +53,12 @@ applyRow (ys:yss) xs = sum (zipWith (*) xs ys) : applyRow yss xs
 scalarMul :: (Num a) => a -> Matrix n m a -> Matrix n m a 
 scalarMul x  = fmap (* x)
 
-transpose ::  Matrix n m a -> Matrix m n a 
-transpose (Matrix xs) = Matrix (L.transpose xs)
+
+transposeM ::  Matrix n m a -> Matrix m n a 
+transposeM (Matrix xs) = Matrix (L.transpose xs)
 
 add :: Num a => Matrix n m a -> Matrix n m a  -> Matrix n m a
-add (Matrix xs) (Matrix ys ) = Matrix $ zipWith (zipWith (+)) xs ys
+add (Matrix xs) (Matrix ys ) = Matrix $ zipWith (zipWith (+)) xs  ys
 
 sub :: Num a => Matrix n m a -> Matrix n m a  -> Matrix n m a
 sub (Matrix xs) (Matrix ys ) = Matrix $ zipWith (zipWith (-)) xs ys
@@ -63,16 +72,29 @@ add' = sqOp (+)
 sub' :: Num a => Matrix n m a -> Matrix n m a  -> Matrix n m a
 sub' = sqOp (-)
 
-mu :: Matrix 3 3 Integer
-mu = Matrix u
+divEls :: (DivSupported a, Num a) => Matrix n m a -> Matrix n m a  -> Matrix n m a
+divEls = sqOp divOp
 
-mv :: Matrix 3 3 Integer
-mv = Matrix  v
 
-u = [[1,2,2],[1,1,2], [4,5,6]]
-v = [[1,2,1],[3,4,1], [1,1,1]]
--- u * v = [[9,12,5],[6,8,4],[25,34,15]]
--- λ-> transpose v
--- [[1,3,1],[2,4,1],[1,1,1]]
--- fmap (myF [(+1),:r(+3)])  [[4,6],[10,11]]
---  = [14,25]
+mu :: Matrix 3 3 Int
+mu = Matrix [[1,2,2],[1,1,2], [4,5,6]]
+
+mv :: Matrix 4 2 Int
+mv = Matrix   [[1,2],[3,4], [1,1], [4,4]]
+
+ma :: Matrix 5 3 Double
+ma = Matrix [[90,80,40],
+             [90,60,80],
+             [60,50,70],
+             [30,40,70],
+             [30,20,90]]
+
+mOnes :: Matrix 5 5 Double
+mOnes = Matrix [[1,1,1,1,1],
+                [1,1,1,1,1],
+                [1,1,1,1,1],
+                [1,1,1,1,1],
+                [1,1,1,1,1]]
+
+devM = ma `sub` ( 0.2 `scalarMul` (mOnes `mul` ma))
+covM = transposeM devM `mul` devM
