@@ -22,11 +22,13 @@ data Matrix (r :: Nat) (c :: Nat) a = Matrix R C [[a]] deriving Show
 instance (Num a ) => Semigroup ( Matrix (n :: Nat) (n :: Nat) a) where 
     (<>) = mul
  
--- instance (Num a ) => Monoid  ( Matrix (n :: Nat) (n :: Nat) a) where
---     mempty =  [[]] 
-    
+instance (Num a ) => Monoid  ( Matrix (n :: Nat) (n :: Nat) a) where
+    mempty  =  [[]] 
+
 --     
-      
+idMatrix :: (Num a) => Int -> Matrix a 
+idMatrix n = Matrix n n (identity n) 
+
 identity :: (Num a ) => Int -> [[a]]
 identity n | n <= 0 = [[]]
            | otherwise = take n (fmap (take n) rc) where 
